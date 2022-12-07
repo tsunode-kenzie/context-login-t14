@@ -1,5 +1,5 @@
 import { createContext, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { api } from "../services/api";
 
 export const AuthContext = createContext({});
@@ -8,6 +8,7 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
+    const location = useLocation();
 
     useEffect(() => {
         async function loadUser() {
@@ -19,11 +20,9 @@ export const AuthProvider = ({ children }) => {
             }
 
             try {
-                const { data } = await api.get('/profile', {
-                    headers: {
-                        authorization: `Bearer ${token}`
-                    }
-                });
+                api.defaults.headers.common.authorization = `Bearer ${token}`;
+
+                const { data } = await api.get('/profile');
                 
                 setUser(data);
             } catch (error) {
@@ -44,8 +43,11 @@ export const AuthProvider = ({ children }) => {
     
             setUser(userResponse);
             localStorage.setItem('@context-demo:token', token);
+            api.defaults.headers.common.authorization = `Bearer ${token}`;
     
-            navigate('/dashboard')
+            const toNavigate = location.state?.from?.pathname || '/dashboard'
+
+            navigate(toNavigate, { replace: true })
         } catch (error) {
             console.error(error);
         }
